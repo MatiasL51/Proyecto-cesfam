@@ -43,4 +43,4 @@ def crear_solicitud_oirs(request):
 def listar_solicitudes_admin(request):
     # Obtiene todas las solicitudes ordenadas de la más nueva a la más antigua
     solicitudes = SolicitudOIRS.objects.all().order_by('-fecha_creacion')
-    return render(request, 'oirs/listar_solicitudes.html', {'solicitudes': solicitudes})
+    return render(request, 'listar_solicitudes.html', {'solicitudes': solicitudes})
