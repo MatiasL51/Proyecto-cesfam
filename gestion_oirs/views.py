@@ -53,22 +53,26 @@ def listar_solicitudes_admin(request):
 # 3. Vista de prueba para la Base de Datos No Relacional (MongoDB)
 def probar_conexion_mongo(request):
     """
-    Inserta un documento de prueba en MongoDB simulando 
-    una encuesta de satisfacción anónima del CESFAM.
+    Inserta un documento de trazabilidad/auditoría en la nueva colección 
+    'logs_auditoria_oirs' de MongoDB desde el backend Django.
     """
     documento_prueba = {
-        "folio_solicitud": 1,
-        "establecimiento": "CESFAM Padre Las Casas",
-        "calificacion_atencion": 5,
-        "comentario": "Excelente servicio en la OIRS, muy buena disposición.",
-        "anonimo": True
+        "origen": "Backend Django 5.2.19 (Unidad 3)",
+        "evento": "INGRESO_SOLICITUD_OIRS",
+        "folio_relacionado_mysql": 1,
+        "establecimiento": "CESFAM Temuco",
+        "detalle_operacion": "Validación de persistencia híbrida MySQL + MongoDB",
+        "metadatos_cliente": {
+            "navegador": request.META.get('HTTP_USER_AGENT', 'Desconocido')[:50],
+            "metodo_http": request.method
+        }
     }
     
-    # Operación de Escritura en MongoDB mediante el conector auxiliar
-    inserted_id = mongo_db.guardar_encuesta(documento_prueba)
+    inserted_id = mongo_db.registrar_evento_implementacion(documento_prueba)
     
     return JsonResponse({
         "status": "success",
-        "mensaje": "Documento NoSQL guardado exitosamente en MongoDB",
+        "coleccion": "logs_auditoria_oirs",
+        "mensaje": "Documento NoSQL de Unidad 3 guardado exitosamente en MongoDB",
         "mongo_id": inserted_id
     })
