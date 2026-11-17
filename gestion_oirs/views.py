@@ -2,10 +2,13 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAdminUser, AllowAny
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.http import JsonResponse
+from django.contrib.admin.views.decorators import staff_member_required
+
 from .models import SolicitudOIRS
 from .serializers import SolicitudOIRSSerializer
 from .forms import SolicitudOIRSForm
-from django.contrib.admin.views.decorators import staff_member_required
+from .mongo_conector import mongo_db
 
 
 # 1. Vista de la API REST (para la app o administración externa)
@@ -39,8 +42,33 @@ def crear_solicitud_oirs(request):
     
     return render(request, 'formulario_oirs.html', {'form': form})
 
+
 @staff_member_required
 def listar_solicitudes_admin(request):
     # Obtiene todas las solicitudes ordenadas de la más nueva a la más antigua
     solicitudes = SolicitudOIRS.objects.all().order_by('-fecha_creacion')
     return render(request, 'listar_solicitudes.html', {'solicitudes': solicitudes})
+
+
+# 3. Vista de prueba para la Base de Datos No Relacional (MongoDB)
+def probar_conexion_mongo(request):
+    """
+    Inserta un documento de prueba en MongoDB simulando 
+    una encuesta de satisfacción anónima del CESFAM.
+    """
+    documento_prueba = {
+        "folio_solicitud": 1,
+        "establecimiento": "CESFAM Padre Las Casas",
+        "calificacion_atencion": 5,
+        "comentario": "Excelente servicio en la OIRS, muy buena disposición.",
+        "anonimo": True
+    }
+    
+    # Operación de Escritura en MongoDB mediante el conector auxiliar
+    inserted_id = mongo_db.guardar_encuesta(documento_prueba)
+    
+    return JsonResponse({
+        "status": "success",
+        "mensaje": "Documento NoSQL guardado exitosamente en MongoDB",
+        "mongo_id": inserted_id
+    })
