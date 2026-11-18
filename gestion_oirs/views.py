@@ -53,26 +53,50 @@ def listar_solicitudes_admin(request):
 # 3. Vista de prueba para la Base de Datos No Relacional (MongoDB)
 def probar_conexion_mongo(request):
     """
-    Inserta un documento de trazabilidad/auditoría en la nueva colección 
-    'logs_auditoria_oirs' de MongoDB desde el backend Django.
+    Ejecuta pruebas de persistencia híbrida en MongoDB:
+    1. Inserción de un registro de auditoría (Camino feliz).
+    2. Consulta con filtros inexistentes o valores nulos (Escenario de borde).
     """
-    documento_prueba = {
-        "origen": "Backend Django 5.2.19 (Unidad 3)",
-        "evento": "INGRESO_SOLICITUD_OIRS",
-        "folio_relacionado_mysql": 1,
-        "establecimiento": "CESFAM Temuco",
-        "detalle_operacion": "Validación de persistencia híbrida MySQL + MongoDB",
-        "metadatos_cliente": {
-            "navegador": request.META.get('HTTP_USER_AGENT', 'Desconocido')[:50],
-            "metodo_http": request.method
+    try:
+        # 1. Prueba de inserción exitosa (Camino feliz)
+        documento_prueba = {
+            "establecimiento": "CESFAM Padre Las Casas",
+            "evento": "INGRESO_SOLICITUD_OIRS",
+            "folio_relacionado_mysql": 1,
+            "detalle_operacion": "Validación de persistencia híbrida MySQL + MongoDB",
+            "metadatos_cliente": {
+                "navegador": request.META.get('HTTP_USER_AGENT', 'Desconocido')[:50],
+                "metodo_http": request.method
+            }
         }
-    }
-    
-    inserted_id = mongo_db.registrar_evento_implementacion(documento_prueba)
-    
-    return JsonResponse({
-        "status": "success",
-        "coleccion": "logs_auditoria_oirs",
-        "mensaje": "Documento NoSQL de Unidad 3 guardado exitosamente en MongoDB",
-        "mongo_id": inserted_id
-    })
+        
+        mongo_id = mongo_db.registrar_log_auditoria(documento_prueba)
+
+        # 2. PRUEBA DE ESCENARIO NEGATIVO / DATOS NULOS
+        # Buscamos un folio fantasma o con valor nulo para probar el manejo de vacíos
+        resultado_nulo = mongo_db.consultar_log_por_criterio({
+            "folio_relacionado_mysql": 99999,
+            "calificacion_global": None
+        })
+
+        # Respuesta consolidada para el navegador
+        respuesta_json = {
+            "status": "success",
+            "coleccion": "logs_auditoria_oirs",
+            "prueba_1_insercion": {
+                "mensaje": "Documento NoSQL guardado exitosamente en MongoDB",
+                "mongo_id": mongo_id
+            },
+            "prueba_2_consulta_nula": {
+                "descripcion": "Escenario de borde / consulta con datos nulos o inexistentes",
+                "resultado": resultado_nulo
+            }
+        }
+        
+        return JsonResponse(respuesta_json, json_dumps_params={'ensure_ascii': False, 'indent': 4})
+
+    except Exception as e:
+        return JsonResponse({
+            "status": "error",
+            "mensaje": f"Ocurrió un error en la prueba: {str(e)}"
+        }, status=500)
