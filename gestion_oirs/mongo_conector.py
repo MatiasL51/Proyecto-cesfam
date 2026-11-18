@@ -19,6 +19,10 @@ class MongoConector:
 
     @classmethod
     def registrar_log_auditoria(cls, documento_datos):
+        """
+        Inserta un documento en 'logs_auditoria_oirs' validando campos nulos,
+        incorporando marca de tiempo UTC y preservando el esquema flexible.
+        """
         try:
             db = cls().db
             coleccion = db['logs_auditoria_oirs']
@@ -42,7 +46,19 @@ class MongoConector:
             return None
 
     @classmethod
+    def registrar_evento_implementacion(cls, documento_datos):
+        """
+        Método alias para mantener compatibilidad con las vistas que 
+        invocan 'registrar_evento_implementacion'.
+        """
+        return cls.registrar_log_auditoria(documento_datos)
+
+    @classmethod
     def consultar_log_por_criterio(cls, filtro):
+        """
+        Ejecuta consultas controladas manejando resultados vacíos o nulos 
+        cuando no se encuentran coincidencias en la colección.
+        """
         try:
             db = cls().db
             coleccion = db['logs_auditoria_oirs']
